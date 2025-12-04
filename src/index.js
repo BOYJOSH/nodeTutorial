@@ -1,114 +1,79 @@
 import express from 'express';
-import { Router } from 'express';
+
 import { config } from './config/env.js';
-import hashPassword from './utils/bcrypt.js';
 
+import { userRoutes } from './users/users.routes.js';
 
-const users = [
-  {
-    id: 1,
-    name: "johndoe",
-    password: "password123",
-    email: "joshua@gmail.com",
-    isAdmin: true,
-    createdAt: "2024-01-02"
-  },
-  {
-    id: 2,
-    name: "marysmith",
-    password: "maryPass55",
-    email: "johndoe@gmail.com",
-    isAdmin: false,
-    createdAt: "2024-02-10"
-  },
-  {
-    id: 3,
-    name: "peterj",
-    password: "peter2024",
-    email: "peterj@gmail.com",
-    isAdmin: false,
-    createdAt: "2024-03-05"
-  },
-  {
-    id: 4,
-    name: "peterj",
-    password: "david2025",
-    email: "davidmark@gmail.com",
-    isAdmin: false,
-    createdAt: "2024-03-05"
-  }
-];
-
+import { initDB } from './models/index.js';
 
 const app = express();
 
 app.use(express.json());
+app.use('/users', userRoutes);
 
-const router = Router();
-app.use(router);
-router.get("/", (req, res) => {
-    res.send(`Hello World`)
-})
 
-router.get('/api/users', (req, res) => {
-    const {miles} = req.query;
-    
-    if (miles){
-        const user = users.find((item) => item.id == parseInt(miles));
+// router.get('/api/users', (req, res) => {
+//     const {miles} = req.query;
 
-        return res.status(200).json({user})
-    }
-    return res.status(200).json(users);
-})
+//     if (miles){
+//         const user = users.find((item) => item.id == parseInt(miles));
+
+//         return res.status(200).json({user})
+//     }
+//     return res.status(200).json(users);
+// })
 
 //Post Function
-router.post('/users/signup', async (req, res) => {
 
-  //destructuring data from frontend
-  const {id, name, email, password} = req.body;
-  
-  //Validating USer input
-  if(!id) return res.status(400).json({error: `id is required`})
-  if(!name) return res.status(400).json({error: `name is required`})
-  if(!email) return res.status(400).json({error: `email is required`})
-  if(!password) return res.status(400).json({error: `password is required`})
-  
-  //checek if a user exist
-  let valid = users.find((item) => item.email === email);
+// router.get("/products", auth,(req, res) => {
+//   try {
 
-  //throw an error is user exist
-  if(valid) return res.status(400).json({error: `user exist with email: ${email}`,})
-  
-  const encryptedPassword = await hashPassword(password)
-  console.log(encryptedPassword)
-  const newuser={
-    id,
-    name,
-    email,
-    encryptedPassword
-  }
-  valid = users.push(newuser)
-  
-  return res.status(201).json({message: `Account registered successfully`, newuser: users[users.length -1]});
+//     return res.status(200).json({products});
 
-})
-router.post("/users/login", (req, res) =>{
-    const {email, password} = req.body;
-    const exist = users.find((users) => users.email === email);
-    if(exist){
-        if(exist.password === password){
-            return res.status(200).json({message: "Login successfully"})
-        }
-        else{
-            return res.status(400).json({message: `Incorrect Password`})
-        }
-    };
-    return res.status(400).json({message: `User not found`})
-    //res.json({users})
+//   } catch (error) {
+//     console.error(`Error getting products`);
+//       return res.status({message: "Internal Server Error!"})
+//   }
+// })
 
-})
+// router.delete("/product/:id", auth, (req, res) => {
+//   try {
 
-app.listen(config.port, () => {
+//     const loggedInUser = req.user;
+
+//     if(!loggedInUser) return res.status(401).json({error: `Kindly login to access this endpoint`});
+
+//     if(loggedInUser.payload.role !== "admin") return res.status(403).json({error: `Unauthorized! You don't have permission to accces this endpoint.`});
+
+//     const {id} = req.params;
+
+//     if(!id) return res.status(400).json({error: `ID is required`});
+
+//     const product = products.find((product) => product.id === parseInt(id));
+
+//     if(!product) return res.status(404).json(`{error: Product not found with id: ${id}}`);
+
+//     const productsLeft = products.filter((product) => product.id !== parseInt(id));
+
+//     return res.status(200).json({productsLeft});
+
+//   } catch (error) {
+
+//     console.error(`Error deleting products. Error: ${error}`);
+
+//     return res.status(500).json({error: `Internal Server Error.`});
+
+//   }
+// });
+
+app.listen(config.port, async () => {
+  try {
     console.log(`server running on http://localhost:${config.port}`);
-        
+    await initDB();
+    console.log('Connection has been established successfully.');
+  }
+  catch (error) {
+    console.error('Unable to connect to the database:', error);
+  }
+
 })
