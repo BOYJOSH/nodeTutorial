@@ -33,6 +33,11 @@ User.init(
       allowNull: false,
       unique: true
       },
+      phoneNumber: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        unique: true
+      },
       createdAt: {
         allowNull: false,
         type: DataTypes.DATE

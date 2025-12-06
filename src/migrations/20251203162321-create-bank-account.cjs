@@ -3,7 +3,7 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.createTable('BankAccount', {
+    await queryInterface.createTable('bankAccounts', {
       accountID: {
         type: Sequelize.STRING,
         defaultValue: Sequelize.UUID,
@@ -14,7 +14,7 @@ module.exports = {
         type: Sequelize.STRING,
         allowNull: false,
         references: {
-          model: 'User', // table name
+          model: 'Users', // table name
           key: 'id'       // PK of Users
         },
         onUpdate: 'CASCADE',
