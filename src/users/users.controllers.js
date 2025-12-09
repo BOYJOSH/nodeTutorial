@@ -1,7 +1,7 @@
 import { aToken } from "../config/jwt.js";
 import { users } from "./users.service.js";
 import { comparePassword, hashPassword } from "../utils/bcrypt.js";
-import { loginUserSchema } from "../../validators/users.js";
+import { loginUserSchema, transferSchema, sigupUserSchema} from "../../validators/users.js";
 import { Router } from "express";
 import { User } from "../models/user.js";
 import { generateAccountNumberFromPhoneNumber, generateStateSecurityNumber } from "../utils/helpers.js";
@@ -10,16 +10,12 @@ import { bankAccount } from "../models/bankAccount.js";
 
 export const signUpUserController = async (req, res) => {
   try {
-    //destructuring data from frontend
-    let { firstName, lastName, email, password, phoneNumber } = req.body;
-
-    //Validating USer input
-
-    if (!firstName) return res.status(400).json({ error: `firstName is required` })
-    if (!lastName) return res.status(400).json({ error: `lastName is required` })
-    if (!email) return res.status(400).json({ error: `email is required` })
-    if (!password) return res.status(400).json({ error: `password is required` })
-    if (!phoneNumber) return res.status(400).json({ error: `Phone Number is required` })
+    //destructuring data from frontend and Validating User input
+    const { error, value } = sigupUserSchema.validate(req.body, { abortEarly: false });
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    }
+    let { firstName, lastName, email, password, phoneNumber, balance } = value;
 
     const [valid, existingPhone] = await Promise.all([
       User.findOne({ where: { email } }),
@@ -38,10 +34,15 @@ export const signUpUserController = async (req, res) => {
     const encryptedPassword = await hashPassword(password)
     /*console.log(encryptedPassword)*/
 
-    const newUser = await User.create({ ...req.body, password: encryptedPassword, SSN: generateStateSecurityNumber() });
+    const newUser = await User.create({
+       ...req.body, 
+       password: encryptedPassword, 
+       SSN: generateStateSecurityNumber() 
+      });
     const account = await bankAccount.create({
       userId: newUser.id,
       bankName: "Access Bank",
+      balance: balance,
       accountNumber: accountNumber,
     });
     return res.status(201).json({
@@ -57,6 +58,37 @@ export const signUpUserController = async (req, res) => {
 }
 };
 
+export const transferController = async (req, res) => {
+  try {
+    const {error, value}= transferSchema.validate(req.body, {abortEarly: false});
+    if (error) {
+      return res.status(400).json({ error: error.message });
+    } 
+    let { fromAccount, toAccount, amount } = value;
+
+    const senderAccount = await bankAccount.findOne({ where: { accountNumber: fromAccount } });
+    const receiverAccount = await bankAccount.findOne({ where: { accountNumber: toAccount } });
+    if (!senderAccount) return res.status(404).json({ error: `Sender account not found: ${fromAccount}` });
+    if (!receiverAccount) return res.status(404).json({ error: `Receiver account not found: ${toAccount}` });
+    senderAccount.balance -= amount;
+    receiverAccount.balance += amount;
+    await senderAccount.update({ balance: senderAccount.balance });
+    await receiverAccount.update({ balance: receiverAccount.balance });
+    
+
+   return res.status(200).json({
+      message: "Transfer successful",
+      transaction:{ 
+        from: senderAccount.accountNumber,
+        to: receiverAccount.accountNumber,
+        amount
+      }
+    });
+  } catch (error) {
+    console.error("Error processing transfer", error);
+    return res.status(500).json({ error: 'Internal Server Error Trying to make transfer' });
+  }
+};
 
 export const loginUserController = async (req, res) => {
 
@@ -83,17 +115,17 @@ export const loginUserController = async (req, res) => {
     };
   } catch (error) {
     console.error(`Error logging in user`);
-    return res.status({ message: "Internal Server Error!" })
+    return res.status({ message: "Internal Server Error Trying to Login!" })
 
   }
 
   return res.status(400).json({ message: `User not found` })
   //res.json({users})
-}
+};
 export const getUserProfileController = async (req, res) => {
   try {
 
-    const loggedIn = req.user;
+    const loggedIn = req.User;
 
     if (!loggedIn) return res.status(401).json({ error: `Unauthorized!` });
 
@@ -107,6 +139,7 @@ export const getUserProfileController = async (req, res) => {
     return res.status(200).json({ user });
 
   } catch (error) {
-
+     console.error(`Error getting user`);
+    return res.status({ message: "Internal Server Error Trying to Get User!" })
   }
 };

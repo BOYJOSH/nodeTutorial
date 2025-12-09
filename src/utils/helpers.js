@@ -9,18 +9,16 @@ export function generateStateSecurityNumber() {
 }
 
 
-export function generateAccountNumberFromPhoneNumber(phone) {
-  if (!phone) return null;
-
-  // remove non-digits
-  phone = phone.replace(/\D/g, '');
-
-  // remove +234 or 234
-  if (phone.startsWith('234')) phone = phone.slice(3);
-
-  // remove leading 0
-  if (phone.startsWith('0')) phone = phone.slice(1);
-
-  // now phone should start with 7/8/9 and be 10 digits
-  return phone;
+export function generateAccountNumberFromPhoneNumber(phone){
+    if (!phone) return null;
+    if(phone.startsWith('234')){
+        return phone.slice(3);
+    }
+    if(phone.startsWith('+234')){
+        return phone.slice(4);
+    }
+    if(phone.startsWith('0')){
+        return phone.slice(1);
+    }
+    return phone;
 }
