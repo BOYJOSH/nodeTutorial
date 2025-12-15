@@ -20,6 +20,7 @@ export const auth = async (req, res, next) => {
             return res.status(403).json({error: "This session has expired. Kindly re-login"});
         }
         req.user = user;
+        console.log("Authenticated user:", user);
         next();
     });
         

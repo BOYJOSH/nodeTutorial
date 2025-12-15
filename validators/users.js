@@ -5,16 +5,30 @@ export const loginUserSchema = joi.object({
     password: joi.string().required()   // ← add ()
 });
 
-export const transferSchema = joi.object({
-    amount: joi.number().required(),
-    fromAccount: joi.string().min(10).max(10).required(),
-    toAccount: joi.string().min(10).max(10).required()
-});
+// export const transferSchema = joi.object({
+//     amount: joi.number().required(),
+//     fromAccount: joi.string().min(10).max(10).required(),
+//     toAccount: joi.string().min(10).max(10).required()
+// });
+
+// export const depositSchema = joi.object({
+//     amount: joi.number().required(),
+//     description: joi.string().min(5),
+//     toAccount: joi.string().min(10).max(10).required()
+// });
+
+// export const withdrawSchema = joi.object({
+//     amount: joi.number().required(),
+//     fromAccount: joi.string().min(10).max(10).required(),
+//     toAccount: joi.string().min(10).max(10).required()
+// });
 
 export const sigupUserSchema = joi.object({
-     firstName: joi.number().required,
-     lastName: joi.string().required,
+     firstName: joi.string().required(),
+     lastName: joi.string().required(),
      email: joi.string().required(),
-     password: joi.string().min(11).required,
-    phoneNumber: joi.string().required().min(7)
+     password: joi.string().required(),
+    phoneNumber: joi.string().required(),
+    balance: joi.number().required()
 });
+

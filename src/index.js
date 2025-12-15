@@ -2,14 +2,14 @@ import express from 'express';
 
 import { config } from './config/env.js';
 
-import { userRoutes } from './users/users.routes.js';
+import {routes} from './utils/routes.js';
 
 import { initDB } from './models/index.js';
 
 const app = express();
 
 app.use(express.json());
-app.use('/users', userRoutes);
+app.use(routes);
 
 
 // router.get('/api/users', (req, res) => {

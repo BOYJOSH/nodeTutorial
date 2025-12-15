@@ -1,7 +1,7 @@
 import { aToken } from "../config/jwt.js";
 import { users } from "./users.service.js";
 import { comparePassword, hashPassword } from "../utils/bcrypt.js";
-import { loginUserSchema, transferSchema, sigupUserSchema} from "../../validators/users.js";
+import { loginUserSchema, sigupUserSchema} from "../../validators/users.js";
 import { Router } from "express";
 import { User } from "../models/user.js";
 import { generateAccountNumberFromPhoneNumber, generateStateSecurityNumber } from "../utils/helpers.js";
@@ -58,70 +58,95 @@ export const signUpUserController = async (req, res) => {
 }
 };
 
-export const transferController = async (req, res) => {
-  try {
-    const {error, value}= transferSchema.validate(req.body, {abortEarly: false});
-    if (error) {
-      return res.status(400).json({ error: error.message });
-    } 
-    let { fromAccount, toAccount, amount } = value;
+// export const transferController = async (req, res) => {
+//   try {
+//     const {error, value}= transferSchema.validate(req.body, {abortEarly: false});
+//     if (error) {
+//       return res.status(400).json({ error: error.message });
+//     } 
+//     let { fromAccount, toAccount, amount } = value;
 
-    const senderAccount = await bankAccount.findOne({ where: { accountNumber: fromAccount } });
-    const receiverAccount = await bankAccount.findOne({ where: { accountNumber: toAccount } });
-    if (!senderAccount) return res.status(404).json({ error: `Sender account not found: ${fromAccount}` });
-    if (!receiverAccount) return res.status(404).json({ error: `Receiver account not found: ${toAccount}` });
-    senderAccount.balance -= amount;
-    receiverAccount.balance += amount;
-    await senderAccount.update({ balance: senderAccount.balance });
-    await receiverAccount.update({ balance: receiverAccount.balance });
+//     const senderAccount = await bankAccount.findOne({ where: { accountNumber: fromAccount } });
+//     const receiverAccount = await bankAccount.findOne({ where: { accountNumber: toAccount } });
+//     if (!senderAccount) return res.status(404).json({ error: `Sender account not found: ${fromAccount}` });
+//     if (!receiverAccount) return res.status(404).json({ error: `Receiver account not found: ${toAccount}` });
+//     senderAccount.balance -= amount;
+//     receiverAccount.balance += amount;
+//     await senderAccount.update({ balance: senderAccount.balance });
+//     await receiverAccount.update({ balance: receiverAccount.balance });
     
 
-   return res.status(200).json({
-      message: "Transfer successful",
-      transaction:{ 
-        from: senderAccount.accountNumber,
-        to: receiverAccount.accountNumber,
-        amount
-      }
-    });
-  } catch (error) {
-    console.error("Error processing transfer", error);
-    return res.status(500).json({ error: 'Internal Server Error Trying to make transfer' });
-  }
-};
+//    return res.status(200).json({
+//       message: "Transfer successful",
+//       transaction:{ 
+//         from: senderAccount.accountNumber,
+//         to: receiverAccount.accountNumber,
+//         amount
+//       }
+//     });
+//   } catch (error) {
+//     console.error("Error processing transfer", error);
+//     return res.status(500).json({ error: 'Internal Server Error Trying to make transfer' });
+//   }
+// };
+
+// export const depositController = async (req, res) => {
+//   // Implementation for deposit functionality
+//   try {
+
+    
+//   } catch (error) {
+//     console.error("Error processing Deposit", error);
+//     return res.status(500).json({ 
+//       error: 'Internal Server Error Trying to deposit funds' 
+//     });
+//   }
+//};
+
+// export const withdrawController = async (req, res) => {
+//   // Implementation for withdraw functionality
+//   try {
+    
+//   } catch (error) {
+//     console.error("Error processing Withdrawal", error);
+//     return res.status(500).json({ 
+//       error: 'Internal Server Error Trying to Withdraw funds' 
+//     });
+//   }
+// }
 
 export const loginUserController = async (req, res) => {
-
   try {
     const { error, value } = loginUserSchema.validate(req.body);
-
     if (error) {
       return res.status(400).json({ error: error.message });
     }
 
-    const { email, password } = value
-    let exist = await User.findOne({where: {email}})
-    const Id = exist.id;
-    const role = exist.role;
+    const { email, password } = value;
 
-    const accessToken = await aToken({ Id, role })
-    if (exist) {
-      if (exist.password === password) {
-        return res.status(200).json({ message: "Login successfully", accessToken })
-      }
-      else {
-        return res.status(400).json({ message: `Incorrect Password` })
-      }
-    };
+    const exist = await User.findOne({ where: { email } });
+    if (!exist) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    const isMatch = await comparePassword(password, exist.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "Incorrect password" });
+    }
+
+    const accessToken = aToken({ Id: exist.id, role: exist.role });
+
+    return res.status(200).json({
+      message: "Login successful",
+      accessToken
+    });
+
   } catch (error) {
-    console.error(`Error logging in user`);
-    return res.status({ message: "Internal Server Error Trying to Login!" })
-
+    console.error("Login error", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-
-  return res.status(400).json({ message: `User not found` })
-  //res.json({users})
 };
+
 export const getUserProfileController = async (req, res) => {
   try {
 
