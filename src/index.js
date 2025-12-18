@@ -69,6 +69,7 @@ app.use(routes);
 app.listen(config.port, async () => {
   try {
     console.log(`server running on http://localhost:${config.port}`);
+    console.log(`server running on render https://nodetutorial-6t5n.onrender.com`);
     await initDB();
     console.log('Connection has been established successfully.');
   }
