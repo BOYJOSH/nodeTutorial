@@ -62,35 +62,56 @@ export const transferController = async (req, res) => {
 };
 
 
+
 export const createBankAccountController = async (req, res) => {
-    try {
-        const loggedInUser = req.user;
+  try {
+    const loggedInUser = req.user;
 
-        if (!loggedInUser) 
-          return res.status(401).json({ error: `Kindly login to access this endpoint` });
-        
-        let { email, accountType, bankName, currency} = req.body;
+    if (!loggedInUser)
+      return res.status(401).json({ error: "Kindly login to access this endpoint" });
 
-        if(!email || !accountType || !bankName || !currency) 
-          return res.status(400).json({error: `email, accountType, bankName and currency are required`});
-        
-        const bemail = await bankAccount.findOne({ where: { email: email } });
-        if (!bemail) 
-          return res.status(403).json({error: `Unauthorized to create account for this email`});
-        
-        if(!['USD', 'NGN', 'EUR'].includes(currency)) 
-          return res.status(400).json({error: `one of 'USD', 'NGN', 'EUR' is required`});
-        const accountNumber = generateAccountNumber();
-       
-          return res.status(400).json({error: `Account doesn't exists for this email`});
-        if (bemail)
-            return account = await bankAccount.create({
-            accountType, bankName, currency, accountNumber
-        });
-        
-        return res.status(200).json({Success: "Account created succesfully", account});
-    } catch (error) {
-        console.error("Transfer Error:", error);
-        return res.status(500).json({ error: "Internal Server Error" });
-    }
-}
+    const { accountType, bankName, currency } = req.body;
+
+    if (!accountType || !bankName || !currency)
+      return res.status(400).json({
+        error: "accountType, bankName and currency are required"
+      });
+
+    if (!["USD", "NGN", "EUR"].includes(currency))
+      return res.status(400).json({
+        error: "currency must be one of USD, NGN, EUR"
+      });
+
+    // OPTIONAL: prevent duplicate currency account for same user
+    const existingAccount = await bankAccount.findOne({
+      where: {
+        userId: loggedInUser.id,
+        currency
+      }
+    });
+
+    if (existingAccount)
+      return res.status(400).json({
+        error: `You already have a ${currency} account`
+      });
+
+    const accountNumber = generateAccountNumber();
+
+    const account = await bankAccount.create({
+      userId: loggedInUser.id,
+      accountType,
+      bankName,
+      currency,
+      accountNumber
+    });
+
+    return res.status(201).json({
+      success: "Account created successfully",
+      account
+    });
+
+  } catch (error) {
+    console.error("Create Account Error:", error);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
